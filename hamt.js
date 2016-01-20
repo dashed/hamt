@@ -285,7 +285,7 @@ var updateCollisionList = function updateCollisionList(h, list, f, k, defaultVal
     }
 
     var v = target ? f(target.value) : f(defaultValue);
-    return v === nothing ? arraySpliceOut(i, list) : arrayUpdate(i, new Leaf(h, k, v), list);
+    return target && v === target.value ? list : v === nothing ? arraySpliceOut(i, list) : arrayUpdate(i, new Leaf(h, k, v), list);
 };
 
 /* Lookups
@@ -342,7 +342,7 @@ var _lookup = function _lookup(node, h, k) {
 Leaf.prototype._modify = function (shift, f, h, k, defaultValue) {
     if (k === this.key) {
         var _v = f(this.value);
-        return _v === nothing ? empty : new Leaf(h, k, _v);
+        return _v === this.value ? this : _v === nothing ? empty : new Leaf(h, k, _v);
     }
     var v = f(defaultValue);
     return v === nothing ? this : mergeLeaves(shift, this.hash, this, h, new Leaf(h, k, v));
@@ -351,7 +351,7 @@ Leaf.prototype._modify = function (shift, f, h, k, defaultValue) {
 Collision.prototype._modify = function (shift, f, h, k, defaultValue) {
     if (h === this.hash) {
         var list = updateCollisionList(this.hash, this.children, f, k, defaultValue);
-        return list.length > 1 ? new Collision(this.hash, list) : list[0]; // collapse single element collision list
+        return list === this.children ? this : list.length > 1 ? new Collision(this.hash, list) : list[0]; // collapse single element collision list
     }
     var v = f(defaultValue);
     return v === nothing ? this : mergeLeaves(shift, this.hash, this, h, new Leaf(h, k, v));
@@ -520,7 +520,8 @@ Map.prototype.isEmpty = function () {
     Returns a map with the modified value. Does not alter `map`.
 */
 var modifyHash = hamt.modifyHash = function (f, hash, key, map, defaultValue) {
-    return new Map(map.root._modify(0, f, hash, key, defaultValue));
+    var newRoot = map.root._modify(0, f, hash, key, defaultValue);
+    return newRoot === map.root ? map : new Map(newRoot);
 };
 
 Map.prototype.modifyHash = function (hash, key, f, defaultValue) {
