@@ -72,17 +72,47 @@ describe('modify', () => {
 
     it('should provide defaultValue to `f` if entry does not exist on non-empty map', () => {
 
+        const NOT_SET = {};
         const h = hamt.set('a', 3, hamt.empty);
 
-        const NOT_SET = {};
-
-        const transform = (x) => {
-
+        const identity = (x) => {
             assert.strictEqual(x, NOT_SET);
-
-            return 'b';
+            return x;
         };
 
-        const h1 = hamt.modify(transform, 'b', h, NOT_SET);
+        const h1 = hamt.modify(identity, 'b', h, NOT_SET);
+    });
+
+    it('should perform edit when defaultValue is what you return from `f` if entry does not exist on empty map', () => {
+
+        const NOT_SET = {};
+        const h = hamt.empty;
+
+        const identity = (x) => {
+            assert.strictEqual(x, NOT_SET);
+            return x;
+        };
+
+        const h2 = h.modify('a', identity, NOT_SET);
+
+        assert.strictEqual(false, h === h2);
+
+    });
+
+    it('does not return new map when new value is the same as old value', () => {
+
+        const NOT_SET = {};
+        const h = hamt.empty;
+
+        const identity = (x) => {
+            assert.strictEqual(x, NOT_SET);
+            return x;
+        };
+
+        const h2 = h.modify('a', identity, NOT_SET);
+
+        assert.strictEqual(false, h === h2);
+        assert.strictEqual(h2, h2.modify('a', identity));
+
     });
 });
